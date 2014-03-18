@@ -1,0 +1,7 @@
+Created by Eddy Pronk - Limitz
+I am not affiliated with Novation, neither is this code.
+
+To build:
+
+make all
+make examples
