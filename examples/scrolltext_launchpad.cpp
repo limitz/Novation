@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
 	
 		getchar();
 	}
-	catch (Exception &e)
+	catch (const char* &e)
 	{
-		fprintf(stderr, "%s\n", e.Message());
+		fprintf(stderr, "%s\n", e);
 	}
 	delete launchpad;
 	return 0;

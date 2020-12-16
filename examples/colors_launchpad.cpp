@@ -36,12 +36,15 @@ int main(int argc, char *argv[])
 			launchpad->SetPadColor(pad, PadColor::Red);
 		}
 
-		printf("Press enter to continue...");
-		getchar();
+		while (launchpad->IsOpen())
+		{
+			launchpad->Process();
+			usleep(1000);
+		}
 	}
-	catch (Exception &e)
+	catch (const char* &e)
 	{
-		fprintf(stderr, "%s\n", e.Message());
+		fprintf(stderr, "%s\n", e);
 	}
 	delete launchpad;
 	return 0;

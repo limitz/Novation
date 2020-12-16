@@ -6,12 +6,11 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <alsa/asoundlib.h>
-#include <exception.h>
-#include <threading.h>
+//#include <exception.h>
+//#include <threading.h>
 
 namespace Novation
 {
-	GENERATE_EXCEPTION(NovationException, Exception);
 
 	class NovationMidiDevice;
 
@@ -127,7 +126,7 @@ namespace Novation
 		virtual void OnPotentiometer(const Pad& pad, uint8_t value) {}
 	};
 
-	class NovationMidiDevice : public Thread
+	class NovationMidiDevice
 	{
 		private:
 		char 		*_id;
@@ -138,14 +137,13 @@ namespace Novation
 		NovationMidiMessageHandler *_handler;
 
 		protected:	
-		Mutex		*_lock;
 
 		public:
 		NovationMidiDevice(const char *id);
 		~NovationMidiDevice();
 
 		const char* Id() const { return _id; }
-		const char* Name() const {};
+		const char* Name() const { return "novation"; };
 
 		bool Reset(uint8_t ledBrightness = 0) const;
 		bool SetBrightness(PadBrightness brightness) const;
@@ -158,13 +156,18 @@ namespace Novation
 		bool GetMessage(uint8_t *buffer, uint16_t *len) const;
 		bool SendMessage(const uint8_t *buffer, uint16_t len) const;
 			
+		void Process();
+		
 		protected:
-		void OnStart();
 		virtual bool MakePadValue(Pad *pad, uint8_t *value, uint8_t *message, uint16_t len) { return false; };
 
 		private:
 		void Open();
+		void Start();
+		void Stop();
 		void Close();
+
+		public:
 		bool IsOpen() const;
 	};
 }

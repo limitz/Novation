@@ -40,12 +40,15 @@ int main(int argc, char *argv[])
 			launchcontrol->SetPadColor(pad, PadColor(i,0));
 		}
 
-		printf("Press enter to continue...");
-		getchar();
+		while (launchcontrol->IsOpen())
+		{
+			launchcontrol->Process();
+			usleep(1000);
+		}
 	}
-	catch (Exception &e)
+	catch (const char* &e)
 	{
-		fprintf(stderr, "%s\n", e.Message());
+		fprintf(stderr, "%s\n", e);
 	}
 	delete launchcontrol;
 	return 0;

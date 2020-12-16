@@ -23,7 +23,6 @@ namespace Novation
 	{
 		_id = strdup(id);
 
-		_lock = new Mutex();
 		_midiIn = 0;
 		_midiOut = 0;
 		_isOpen = false;
@@ -39,34 +38,28 @@ namespace Novation
 		Reset();
 		Close();
 		if (_id) free(_id);
-		delete _lock;
 	}
 
 	void NovationMidiDevice::Open()
 	{	
 		try
 		{
-			_lock->Lock("Opening");
-	
 			int error = snd_rawmidi_open(&_midiIn, &_midiOut, _id, 0);
-			if (error < 0) throw NovationException("Unable to open device [%s]: %s", _id, snd_strerror(error));
-			if (!_midiIn)  throw NovationException("No MIDI input found for [%s]: %s", _id, snd_strerror(error));
-			if (!_midiOut) throw NovationException("No MIDI output found for [%s]: %s", _id, snd_strerror(error));
+			if (error < 0) throw "Unable to open device"; //NovationException("Unable to open device [%s]: %s", _id, snd_strerror(error));
+			if (!_midiIn)  throw "No MIDI input found"; //NovationException("No MIDI input found for [%s]: %s", _id, snd_strerror(error));
+			if (!_midiOut) throw "No MIDI output found"; //NovationException("No MIDI output found for [%s]: %s", _id, snd_strerror(error));
 	
 			snd_rawmidi_nonblock(_midiOut, 1);
 			_isOpen = true;
 		}
-		catch (Exception &e)
+		catch (const char* &e)
 		{
-			_lock->Unlock();
 			throw e;
 		}
-		_lock->Unlock();
 	}
 
 	void NovationMidiDevice::Close()
 	{
-		_lock->Lock("Closing");
 	
 		if (_midiOut)
 		{
@@ -81,25 +74,22 @@ namespace Novation
 		}
 
 		_isOpen = false;
-		_lock->Unlock();
 	}
 
 	bool NovationMidiDevice::IsOpen() const
 	{
-		_lock->Lock();
 		bool result = _isOpen;
-		_lock->Unlock();
 		return result;
 	}
 
-	void NovationMidiDevice::OnStart()
+	void NovationMidiDevice::Process()
 	{
 		uint8_t buffer[64];
 		uint16_t len = 0;
 
-		while (IsRunning())
+		while (IsOpen())
 		{
-			if (!IsValidMessage(buffer, len))
+			if(!IsValidMessage(buffer, len))
 			{
 				uint8_t byte;
 				int result = snd_rawmidi_read(_midiIn, &byte, 1);
@@ -114,7 +104,7 @@ namespace Novation
 					{
 						return;
 					}
-					throw NovationException("Unable to read from [%s]: %s", _id, snd_strerror(result));
+					throw "Unable to read";
 				}
 				if (byte&0x80) _runningStatus = byte;
 				else if (!len) buffer[len++] = _runningStatus;
@@ -128,7 +118,8 @@ namespace Novation
 				if (_handler && MakePadValue(&p, &value, buffer, len))
 				{
 					p.SetOrigin(this);
-					_handler->OnPad(p, value);	
+					_handler->OnPad(p, value);
+					return;
 				}
 				len = 0;
 			}
@@ -164,10 +155,8 @@ namespace Novation
 
 	bool NovationMidiDevice::SendMessage(const uint8_t *buffer, uint16_t len) const
 	{
-		_lock->Lock("SendMessage");
 		if (!IsOpen()) 
 		{
-			_lock->Unlock();
 			return false;
 		}
 	
@@ -176,15 +165,12 @@ namespace Novation
 		{
 			if (!IsOpen()) 
 			{
-				_lock->Unlock(); 
 				return false;
 			}
-			_lock->Unlock();
-			throw NovationException("Unable to write to [%s]: %s", _id, snd_strerror(result));
+			throw "Unable to write"; //NovationException("Unable to write to [%s]: %s", _id, snd_strerror(result));
 		}
 		else 
 		{
-			_lock->Unlock();
 			return true;
 		}
 	}
@@ -209,7 +195,7 @@ namespace Novation
 				{
 					return false;
 				}
-				throw NovationException("Unable to read from [%s]: %s", _id, snd_strerror(result));
+				throw "Unable to write"; //NovationException("Unable to read from [%s]: %s", _id, snd_strerror(result));
 			}
 			if (byte&0x80) _runningStatus = byte;
 			else if (!*len) buffer[(*len)++] = _runningStatus;
